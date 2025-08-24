@@ -15,6 +15,7 @@ from app.handler.retry_handler import RetryHandler
 from app.handler.error_handler import handle_route_errors
 from app.core.constants import API_VERSION
 from app.utils.helpers import redact_key_for_logging
+from app.router.openai_compatiable_routes import list_models as openai_list_models
 
 router = APIRouter(prefix=f"/gemini/{API_VERSION}")
 router_v1beta = APIRouter(prefix=f"/{API_VERSION}")
@@ -99,6 +100,9 @@ async def list_models(
         raise HTTPException(
             status_code=500, detail="Internal server error while fetching Gemini models list"
         ) from e
+
+
+router_v1beta.get("/openai/models")(openai_list_models)
 
 
 @router.post("/models/{model_name}:generateContent")
