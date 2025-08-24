@@ -126,6 +126,31 @@ async def list_openai_models(
         return openai_models
 
 
+@router.get("/openai/models")
+async def list_openai_models_gemini_prefix(
+    _=Depends(security_service.verify_authorization),
+    key_manager: KeyManager = Depends(get_key_manager)
+):
+    """获取 OpenAI 格式的模型列表，兼容 OpenAI API 格式。路径: /gemini/v1beta/openai/models"""
+    operation_name = "list_openai_models_gemini_prefix"
+    async with handle_route_errors(logger, operation_name):
+        logger.info("Handling OpenAI compatible models list request (gemini prefix)")
+        
+        api_key = await key_manager.get_random_valid_key()
+        if not api_key:
+            raise HTTPException(status_code=503, detail="No valid API keys available to fetch models.")
+        
+        logger.info(f"Using API key: {redact_key_for_logging(api_key)}")
+        
+        # 复用现有的模型服务来获取 OpenAI 格式的模型列表
+        openai_models = await model_service.get_gemini_openai_models(api_key)
+        if not openai_models:
+            raise HTTPException(status_code=500, detail="Failed to fetch OpenAI compatible models list.")
+        
+        logger.info("OpenAI compatible models list request successful (gemini prefix)")
+        return openai_models
+
+
 @router.post("/models/{model_name}:generateContent")
 @router_v1beta.post("/models/{model_name}:generateContent")
 @RetryHandler(key_arg="api_key")
