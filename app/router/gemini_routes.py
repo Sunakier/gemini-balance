@@ -15,7 +15,6 @@ from app.handler.retry_handler import RetryHandler
 from app.handler.error_handler import handle_route_errors
 from app.core.constants import API_VERSION
 from app.utils.helpers import redact_key_for_logging
-from app.router.openai_compatiable_routes import list_models as openai_list_models
 
 router = APIRouter(prefix=f"/gemini/{API_VERSION}")
 router_v1beta = APIRouter(prefix=f"/{API_VERSION}")
@@ -102,7 +101,29 @@ async def list_models(
         ) from e
 
 
-router_v1beta.get("/openai/models")(openai_list_models)
+@router_v1beta.get("/openai/models")
+async def list_openai_models(
+    _=Depends(security_service.verify_authorization),
+    key_manager: KeyManager = Depends(get_key_manager)
+):
+    """获取 OpenAI 格式的模型列表，兼容 OpenAI API 格式。"""
+    operation_name = "list_openai_models"
+    async with handle_route_errors(logger, operation_name):
+        logger.info("Handling OpenAI compatible models list request")
+        
+        api_key = await key_manager.get_random_valid_key()
+        if not api_key:
+            raise HTTPException(status_code=503, detail="No valid API keys available to fetch models.")
+        
+        logger.info(f"Using API key: {redact_key_for_logging(api_key)}")
+        
+        # 复用现有的模型服务来获取 OpenAI 格式的模型列表
+        openai_models = await model_service.get_gemini_openai_models(api_key)
+        if not openai_models:
+            raise HTTPException(status_code=500, detail="Failed to fetch OpenAI compatible models list.")
+        
+        logger.info("OpenAI compatible models list request successful")
+        return openai_models
 
 
 @router.post("/models/{model_name}:generateContent")
