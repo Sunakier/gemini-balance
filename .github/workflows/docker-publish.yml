@@ -42,10 +42,12 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             # https://github.com/docker/metadata-action/tree/v5/?tab=readme-ov-file#semver
-            # Event: push,     Ref: refs/head/main,       Tags: main
+            # Event: push,     Ref: refs/head/main,       Tags: main, ci-a1b2c3d
             # Event: push tag, Ref: refs/tags/v1.2.3,     Tags: 1.2.3, 1.2, 1, latest
             # Event: push tag, Ref: refs/tags/v2.0.8-rc1, Tags: 2.0.8-rc1
+            # Event: push/pr,  Ref: any commit,           Tags: ci-a1b2c3d
             type=ref,event=branch
+            type=sha,prefix=ci-,format=short
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
